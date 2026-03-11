@@ -1,0 +1,33 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* 🌑 Global Dark Theme Defaults */
+body {
+  @apply bg-gray-900 text-white;
+  font-family: 'Inter', sans-serif;
+  overflow-x: hidden; /* Prevent horizontal scroll */
+}
+
+/* 🖱️ Custom Scrollbar (Chrome/Safari/Edge) */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0f172a; 
+}
+
+::-webkit-scrollbar-thumb {
+  background: #374151; 
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #00f3ff; /* Neon Blue on hover */
+}
+
+/* 📱 Mobile Safe Area */
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}

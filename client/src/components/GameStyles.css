@@ -1,0 +1,213 @@
+/* GameStyles.css */
+.game-container {
+  display: flex;
+  gap: 20px;
+  padding: 40px;
+  background: linear-gradient(145deg, #1e293b, #0f172a); /* Dark Navy */
+  border-radius: 20px;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+  max-width: 700px;
+  margin: 0 auto;
+  color: white;
+  font-family: 'Segoe UI', sans-serif;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* --- ROBOT AVATAR --- */
+.avatar-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 140px;
+}
+
+.avatar-box {
+  width: 100px;
+  height: 100px;
+  background-color: #334155;
+  border-radius: 15px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-shadow: 0 0 20px rgba(56, 189, 248, 0.5); /* Blue Neon Glow */
+  border: 2px solid #38bdf8;
+  position: relative;
+  transition: transform 0.3s ease;
+}
+
+.avatar-box:hover {
+  transform: scale(1.05);
+}
+
+.robot-face {
+  width: 60px;
+  height: 25px;
+  background-color: #0f172a;
+  border-radius: 12px;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  padding: 0 5px;
+}
+
+.eye {
+  width: 8px;
+  height: 8px;
+  background-color: #00ffcc; /* Cyan Eyes */
+  border-radius: 50%;
+  box-shadow: 0 0 5px #00ffcc;
+  animation: blink 4s infinite;
+}
+
+.mouth {
+  width: 20px;
+  height: 4px;
+  background-color: #0f172a;
+  border-radius: 2px;
+  position: absolute;
+  bottom: 25px;
+}
+
+/* Speech Bubble */
+.speech-bubble {
+  background: white;
+  color: #0f172a;
+  padding: 8px 12px;
+  border-radius: 12px;
+  font-weight: bold;
+  font-size: 12px;
+  position: absolute;
+  top: -25px;
+  right: -30px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+  animation: float 3s ease-in-out infinite;
+  white-space: nowrap;
+  z-index: 10;
+}
+.speech-bubble::after {
+  content: '';
+  position: absolute;
+  bottom: -5px;
+  left: 10px;
+  border-width: 6px 6px 0;
+  border-style: solid;
+  border-color: white transparent;
+}
+
+/* --- BUTTONS --- */
+.options-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex-grow: 1;
+}
+
+.option-btn {
+  background: linear-gradient(90deg, #4f46e5 0%, #7c3aed 100%); /* Purple Gradient */
+  color: white;
+  border: none;
+  padding: 14px 20px;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(124, 58, 237, 0.2);
+  display: flex;
+  align-items: center;
+}
+
+.option-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(124, 58, 237, 0.4);
+  filter: brightness(1.1);
+}
+
+.btn-icon {
+  width: 24px;
+  height: 24px;
+  background: rgba(255,255,255,0.2);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 12px;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+@keyframes blink {
+  0%, 90%, 100% { transform: scaleY(1); }
+  95% { transform: scaleY(0.1); }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+/* GameStyles.css */
+
+/* The Main Box */
+.game-container {
+  display: flex;
+  gap: 30px; /* Space between robot and buttons */
+  padding: 40px;
+  background: linear-gradient(145deg, #1e293b, #0f172a); /* Dark Navy */
+  border-radius: 20px;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+  max-width: 700px;
+  margin: 0 auto;
+  color: white;
+  align-items: center; /* Centers items vertically */
+}
+
+/* The Robot Section */
+.avatar-section {
+  flex-shrink: 0; /* Prevents robot from getting squished */
+}
+
+/* The Buttons Section */
+.options-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex-grow: 1;
+  width: 100%;
+}
+
+/* Beautiful Purple Buttons */
+.option-btn {
+  background: linear-gradient(90deg, #4f46e5 0%, #7c3aed 100%);
+  color: white;
+  border: none;
+  padding: 16px 20px;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(124, 58, 237, 0.2);
+  display: flex;
+  align-items: center;
+}
+
+.option-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(124, 58, 237, 0.4);
+  filter: brightness(1.1);
+}
+
+.btn-icon {
+  width: 24px;
+  height: 24px;
+  background: rgba(255,255,255,0.2);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 12px;
+  font-size: 12px;
+  font-weight: bold;
+}

@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<style>
+    /* 1. Base Setup */
+    body {
+        background-color: #0f172a; /* Dark Navy Background */
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    /* 2. Main Container */
+    .game-container {
+        display: flex;
+        gap: 20px;
+        padding: 40px;
+        background: linear-gradient(145deg, #1e293b, #0f172a);
+        border-radius: 20px;
+        box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+        max-width: 600px;
+        width: 100%;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    /* 3. Avatar Section (Left) */
+    .avatar-section {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 120px;
+    }
+
+    .avatar-box {
+        width: 100px;
+        height: 100px;
+        background-color: #334155;
+        border-radius: 15px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        box-shadow: 0 0 20px rgba(56, 189, 248, 0.3); /* Blue Glow */
+        border: 2px solid #38bdf8;
+        position: relative;
+    }
+
+    /* The Robot Face (CSS drawing based on your image) */
+    .robot-face {
+        width: 60px;
+        height: 25px;
+        background-color: #0f172a;
+        border-radius: 12px;
+        display: flex;
+        justify-content: space-around;
+        align-items: center;
+        padding: 0 5px;
+    }
+    .eye {
+        width: 8px;
+        height: 8px;
+        background-color: white;
+        border-radius: 2px;
+    }
+    .mouth {
+        width: 20px;
+        height: 4px;
+        background-color: #0f172a;
+        border-radius: 2px;
+        position: absolute;
+        bottom: 25px;
+    }
+
+    /* "Your Turn" Bubble */
+    .speech-bubble {
+        background: white;
+        color: #0f172a;
+        padding: 5px 12px;
+        border-radius: 12px;
+        font-weight: bold;
+        font-size: 12px;
+        position: absolute;
+        top: -15px;
+        right: -20px;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        animation: float 3s ease-in-out infinite;
+    }
+    .speech-bubble::after {
+        content: '';
+        position: absolute;
+        bottom: -5px;
+        left: 10px;
+        border-width: 6px 6px 0;
+        border-style: solid;
+        border-color: white transparent;
+    }
+
+    /* 4. Options Section (Right) */
+    .options-list {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+        flex-grow: 1;
+        justify-content: center;
+    }
+
+    .option-btn {
+        /* Gradient Background */
+        background: linear-gradient(90deg, #4f46e5 0%, #7c3aed 100%);
+        color: white;
+        border: none;
+        padding: 16px 24px;
+        border-radius: 12px;
+        font-size: 16px;
+        font-weight: 600;
+        text-align: left;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 4px 15px rgba(124, 58, 237, 0.3);
+    }
+
+    /* Hover Effects */
+    .option-btn:hover {
+        transform: translateY(-3px) scale(1.02);
+        box-shadow: 0 8px 25px rgba(124, 58, 237, 0.5);
+        background: linear-gradient(90deg, #4338ca 0%, #6d28d9 100%);
+    }
+
+    /* Active/Click Effect */
+    .option-btn:active {
+        transform: translateY(1px);
+    }
+
+    /* Numbering circle inside button */
+    .btn-icon {
+        display: inline-block;
+        width: 24px;
+        height: 24px;
+        background: rgba(255,255,255,0.2);
+        border-radius: 50%;
+        text-align: center;
+        line-height: 24px;
+        margin-right: 12px;
+        font-size: 12px;
+    }
+
+    @keyframes float {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-5px); }
+    }
+
+</style>
+</head>
+<body>
+
+<div class="game-container">
+    <div class="avatar-section">
+        <div class="avatar-box">
+            <div class="speech-bubble">Your turn!</div>
+            <div class="robot-face">
+                <div class="eye"></div>
+                <div class="eye"></div>
+            </div>
+            <div class="mouth"></div>
+        </div>
+    </div>
+
+    <div class="options-list">
+        <button class="option-btn"><span class="btn-icon">A</span>Hyperion Beam</button>
+        <button class="option-btn"><span class="btn-icon">B</span>Solar Flare</button>
+        <button class="option-btn"><span class="btn-icon">C</span>Quantum Shield</button>
+        <button class="option-btn"><span class="btn-icon">D</span>System Reboot</button>
+    </div>
+</div>
+
+</body>
+</html>
