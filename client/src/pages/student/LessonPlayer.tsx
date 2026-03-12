@@ -8,7 +8,8 @@ import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import io from 'socket.io-client';
 
-const socket = io('http://localhost:5000');
+const SOCKET_URL = import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace('/api', '') : 'http://localhost:5000';
+const socket = io(SOCKET_URL);
 
 const CODE_TEMPLATES = {
     c: `#include <stdio.h>\n\nint main() {\n    // Read from standard input\n    return 0;\n}\n`,

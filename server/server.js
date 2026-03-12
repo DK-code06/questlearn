@@ -13,19 +13,28 @@ const Problem = require('./models/Problem');
 const app = express();
 const server = http.createServer(app); 
 
+const allowedOrigins = [
+  "http://localhost:5173", 
+  "http://127.0.0.1:5173",
+  process.env.FRONTEND_URL // Render will inject your Vercel link here!
+];
+
+// ✅ Init Socket.io with updated CORS
 const io = new Server(server, {
   cors: {
-    origin: ["http://localhost:5173", "http://127.0.0.1:5173"], 
+    origin: allowedOrigins, 
     methods: ["GET", "POST"]
   }
 });
 
 connectDB();
 
-app.use(cors());
+app.use(cors({
+    origin: allowedOrigins
+}));
 app.use(express.json({ limit: '50mb' })); 
 
-const activeUsers = new Map(); 
+const activeUsers = new Map();
 
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/courses', require('./routes/courses'));

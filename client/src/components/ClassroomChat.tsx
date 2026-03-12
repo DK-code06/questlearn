@@ -4,8 +4,8 @@ import io from 'socket.io-client';
 import { AuthContext } from '../context/AuthContext';
 import api from '../utils/api';
 
-// 🟢 Ensure port 5000 matches your backend
-const socket = io('http://localhost:5000');
+const SOCKET_URL = import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace('/api', '') : 'http://localhost:5000';
+const socket = io(SOCKET_URL);
 
 interface Props {
   courseId: string;

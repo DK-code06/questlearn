@@ -16,7 +16,7 @@ const Login = () => {
     setLoading(true);
     try {
       // 📡 Request Authentication
-      const res = await axios.post('http://localhost:5000/api/auth/login', formData);
+      const res = await api.post('/auth/login', formData);
       
       // 🔐 Save session to Context & LocalStorage
       login(res.data.token, res.data.role);

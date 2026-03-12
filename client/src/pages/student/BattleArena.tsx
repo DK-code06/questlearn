@@ -6,7 +6,8 @@ import { AuthContext } from '../../context/AuthContext';
 import io from 'socket.io-client';
 import Confetti from 'react-confetti';
 
-const socket = io('http://localhost:5000');
+const SOCKET_URL = import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace('/api', '') : 'http://localhost:5000';
+const socket = io(SOCKET_URL);
 
 const CODE_TEMPLATES = {
     c: `#include <stdio.h>\n\nint main() {\n    // 1. Read from standard input (stdin)\n    // Example: int n; scanf("%d", &n);\n\n    // 2. Write your logic here\n\n    // 3. Print to standard output (stdout)\n    // Example: printf("%d", n);\n\n    return 0;\n}\n`,

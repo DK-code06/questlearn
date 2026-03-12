@@ -9,7 +9,8 @@ import {
 import io from 'socket.io-client'; 
 import api from '../../utils/api';
 
-const socket = io('http://localhost:5000'); 
+const SOCKET_URL = import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace('/api', '') : 'http://localhost:5000';
+const socket = io(SOCKET_URL);
 
 const ManageCourse = () => {
   const { id } = useParams(); 
