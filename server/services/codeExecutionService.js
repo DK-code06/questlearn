@@ -1,6 +1,5 @@
 const axios = require("axios");
 
-// ✅ FIX 1: Set base64_encoded to true to bypass Firewall limits for C++/Java
 const JUDGE0_URL = "https://ce.judge0.com/submissions?base64_encoded=true&wait=true";
 
 const languageIds = {
@@ -15,8 +14,6 @@ const languageIds = {
 const encodeBase64 = (str) => Buffer.from(String(str || "")).toString("base64");
 const decodeBase64 = (str) => (str ? Buffer.from(str, "base64").toString("utf-8") : "");
 
-// ✅ FIX 2: Universal Normalizer
-// Strips extra trailing spaces or newlines so students aren't punished for invisible formatting
 const normalizeOutput = (value) => {
   return String(value ?? "")
     .replace(/\r\n/g, "\n")
@@ -40,12 +37,11 @@ const verdictToOverallResult = (verdict) => {
 const mapJudgeResultToStatus = (judgeData, expectedOutput) => {
   const statusDescription = String(judgeData?.status?.description || "").toLowerCase();
   const statusId = judgeData?.status?.id;
-  
-  // ✅ FIX 3: Decode incoming data from Judge0
+
   const compileOutput = sanitizeMessage(decodeBase64(judgeData?.compile_output));
   const stderr = sanitizeMessage(decodeBase64(judgeData?.stderr));
   const stdout = decodeBase64(judgeData?.stdout);
-  
+
   const time = Number(judgeData?.time || 0) || 0;
   const memory = Number(judgeData?.memory || 0) || 0;
 
@@ -100,7 +96,6 @@ const runJudge = async (sourceCode, languageId, stdin) => {
   const response = await axios.post(
     JUDGE0_URL,
     {
-      // ✅ FIX 4: Encode outgoing data to bypass WAF
       source_code: encodeBase64(sourceCode),
       language_id: languageId,
       stdin: encodeBase64(stdin),
@@ -112,33 +107,26 @@ const runJudge = async (sourceCode, languageId, stdin) => {
       },
     }
   );
-
   return response.data || {};
 };
 
 const evaluateSubmission = async ({ code, language, testCases, mode }) => {
   const languageId = languageIds[language];
-  if (!languageId) {
-    throw new Error("Unsupported language");
-  }
-  if (!Array.isArray(testCases) || testCases.length === 0) {
+  if (!languageId) throw new Error("Unsupported language");
+  if (!Array.isArray(testCases) || testCases.length === 0)
     throw new Error("No test cases available for evaluation");
-  }
-  if (!["run", "submit"].includes(mode)) {
-    throw new Error("Invalid evaluation mode");
-  }
+  if (!["run", "submit"].includes(mode)) throw new Error("Invalid evaluation mode");
 
   const runModeResults = [];
   const submitStorageResults = [];
   let totalExecutionTime = 0;
   let passedCases = 0;
 
-  for (let i = 0; i < testCases.length; i += 1) {
+  for (let i = 0; i < testCases.length; i++) {
     const testCase = testCases[i];
-    // Check for output depending on the schema shape (output vs expectedOutput)
     const expectedAnswer = testCase.output || testCase.expectedOutput || "";
     let mapped;
-    
+
     try {
       const judgeData = await runJudge(code, languageId, testCase.input || "");
       mapped = mapJudgeResultToStatus(judgeData, expectedAnswer);
@@ -146,7 +134,9 @@ const evaluateSubmission = async ({ code, language, testCases, mode }) => {
       mapped = {
         status: "Runtime Error",
         userOutput: "",
-        errorMessage: sanitizeMessage(error?.response?.data?.message || error.message) || "Execution failed",
+        errorMessage:
+          sanitizeMessage(error?.response?.data?.message || error.message) ||
+          "Execution failed",
         executionTime: 0,
         memoryUsed: 0,
         passed: false,
@@ -154,9 +144,7 @@ const evaluateSubmission = async ({ code, language, testCases, mode }) => {
     }
 
     totalExecutionTime += mapped.executionTime;
-    if (mapped.status === "Passed") {
-      passedCases += 1;
-    }
+    if (mapped.status === "Passed") passedCases += 1;
 
     if (mode === "run") {
       runModeResults.push({
@@ -164,7 +152,6 @@ const evaluateSubmission = async ({ code, language, testCases, mode }) => {
         status: mapped.status,
         passed: mapped.status === "Passed",
         input: String(testCase.input || ""),
-        // ✅ FIX 5: Match the keys exactly with what the frontend expects
         expected: String(expectedAnswer),
         output: mapped.userOutput || mapped.errorMessage || "No output",
       });
@@ -197,11 +184,10 @@ const evaluateSubmission = async ({ code, language, testCases, mode }) => {
           totalCases: testCases.length,
           storageResults: submitStorageResults,
           overallResult: verdictToOverallResult(verdict),
+          isWinner: false,
         };
       }
-      if (mapped.status !== "Failed") {
-        break;
-      }
+      if (mapped.status !== "Failed") break;
     }
   }
 
@@ -209,20 +195,22 @@ const evaluateSubmission = async ({ code, language, testCases, mode }) => {
     return {
       mode: "run",
       totalCases: testCases.length,
-      passedCases: runModeResults.filter((result) => result.status === "Passed").length,
+      passedCases: runModeResults.filter((r) => r.status === "Passed").length,
       results: runModeResults,
     };
   }
 
+  const allPassed = passedCases === testCases.length;
   return {
     mode: "submit",
-    verdict: passedCases === testCases.length ? "Accepted" : "Wrong Answer",
-    failedCaseNumber: passedCases === testCases.length ? null : passedCases + 1,
+    verdict: allPassed ? "Accepted" : "Wrong Answer",
+    failedCaseNumber: allPassed ? null : passedCases + 1,
     executionTime: totalExecutionTime,
     passedCases,
     totalCases: testCases.length,
     storageResults: submitStorageResults,
-    overallResult: passedCases === testCases.length ? "accepted" : "wrong_answer",
+    overallResult: allPassed ? "accepted" : "wrong_answer",
+    isWinner: allPassed,
   };
 };
 
@@ -233,12 +221,11 @@ const executeCode = async (code, language, testCases) => {
     testCases,
     mode: "submit",
   });
-
   return {
     results: submitResult.storageResults,
     overallResult: submitResult.overallResult,
   };
 };
 
-// ✅ EXPORT AS COMMONJS
+// ✅ CommonJS exports (replaces ES module `export`)
 module.exports = { evaluateSubmission, executeCode };

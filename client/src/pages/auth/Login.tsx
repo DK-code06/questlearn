@@ -1,6 +1,6 @@
 import { useState, useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from '../../utils/api';
 import { AuthContext } from '../../context/AuthContext';
 import { LogIn, Loader2 } from 'lucide-react';
 
@@ -16,7 +16,7 @@ const Login = () => {
     setLoading(true);
     try {
       // 📡 Request Authentication
-      const res = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/auth/login`, formData);
+      const res = await api.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/auth/login`, formData);
       
       // 🔐 Save session to Context & LocalStorage
       login(res.data.token, res.data.role);
