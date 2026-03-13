@@ -41,8 +41,7 @@ const Register = () => {
     try {
       // ✅ Inject the finalCity into the payload
       const payload = { ...formData, city: finalCity };
-      const res = await api.post('/auth/register', payload);
-      
+const res = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/auth/register`, payload);      
       login(res.data.token, res.data.role);
       
       if (res.data.role === 'instructor') {

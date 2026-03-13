@@ -1,4 +1,19 @@
-node_modules
+# Node modules (Crucial to ignore these)
+node_modules/
+client/node_modules/
+server/node_modules/
+
+# Environment variables (Never push secrets!)
 .env
-dist
-build
+client/.env
+server/.env
+.env.local
+.env.*
+
+# Build outputs
+dist/
+client/dist/
+build/
+
+# OS generated files
+.DS_Store

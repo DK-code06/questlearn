@@ -12,14 +12,13 @@ const Problem = require('./models/Problem');
 
 const app = express();
 const server = http.createServer(app); 
-
 const allowedOrigins = [
   "http://localhost:5173", 
   "http://127.0.0.1:5173",
-  process.env.FRONTEND_URL // Render will inject your Vercel link here!
+  process.env.FRONTEND_URL // Render will read this variable
 ];
 
-// ✅ Init Socket.io with updated CORS
+// ✅ FIX: Update Socket.io to use the allowedOrigins
 const io = new Server(server, {
   cors: {
     origin: allowedOrigins, 
@@ -29,12 +28,15 @@ const io = new Server(server, {
 
 connectDB();
 
+// ✅ FIX: Update Express CORS to use the allowedOrigins
 app.use(cors({
     origin: allowedOrigins
 }));
 app.use(express.json({ limit: '50mb' })); 
 
 const activeUsers = new Map();
+
+
 
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/courses', require('./routes/courses'));
@@ -231,3 +233,4 @@ const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
     console.log(`🚀 QUEST SERVER DEPLOYED ON PORT ${PORT}`);
 });
+module.exports = server;
