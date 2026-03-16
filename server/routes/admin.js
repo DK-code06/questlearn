@@ -3,9 +3,13 @@ const router = express.Router();
 const User = require('../models/User');
 const Course = require('../models/Course');
 const Progress = require('../models/Progress');
-const Issue = require('../models/Issue'); // ✅ Added Issue model
+const Issue = require('../models/Issue');
 const auth = require('../middleware/auth');
 const Analytics = require('../models/Analytics');
+const InstructorRequest = require('../models/InstructorRequest');
+const bcrypt = require('bcryptjs');
+const sendEmail = require('../utils/sendEmail');
+
 // Middleware to ensure ONLY Admin can enter
 const adminAuth = (req, res, next) => {
     // Check if user exists and has admin role
@@ -119,7 +123,7 @@ router.get('/engagement/details', [auth, adminAuth], async (req, res) => {
             }, 0);
 
             return {
-                _id: u._id, // ✅ Send the ID for the React 'key'
+                _id: u._id,
                 name: u.name,
                 role: u.role,
                 totalMinutes: Math.round(totalMinutes),
@@ -131,6 +135,104 @@ router.get('/engagement/details', [auth, adminAuth], async (req, res) => {
     } catch (err) {
         console.error("Engagement Route Error:", err.message);
         res.status(500).json({ msg: 'Server Error calculating engagement' });
+    }
+});
+
+
+// ==========================================
+// 📄 5. GET PENDING INSTRUCTOR REQUESTS
+// ==========================================
+router.get('/instructor-requests', [auth, adminAuth], async (req, res) => {
+    try {
+        const requests = await InstructorRequest.find({ status: 'pending' }).sort({ createdAt: -1 });
+        res.json(requests);
+    } catch (err) {
+        res.status(500).send('Server Error');
+    }
+});
+
+// ==========================================
+// ✅ 6. APPROVE INSTRUCTOR REQUEST & EMAIL THEM
+// ==========================================
+router.post('/instructor-requests/:id/approve', [auth, adminAuth], async (req, res) => {
+    try {
+        const request = await InstructorRequest.findById(req.params.id);
+        if (!request) return res.status(404).json({ msg: 'Request not found' });
+        if (request.status !== 'pending') return res.status(400).json({ msg: 'Already processed' });
+
+        // Check if user already exists
+        let user = await User.findOne({ email: request.email });
+        if (user) return res.status(400).json({ msg: 'User already exists with this email' });
+
+        // Create the Instructor Account with a Default Password
+        const defaultPassword = "QuestInstructor123!";
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(defaultPassword, salt);
+
+        user = new User({
+            name: request.name,
+            email: request.email,
+            password: hashedPassword,
+            role: 'instructor',
+            domain: request.domain,
+            location: { city: request.city, country: 'India' },
+            instructorStats: { totalCourses: 0, totalStudents: 0 }
+        });
+
+        await user.save();
+
+        // Mark request as approved
+        request.status = 'approved';
+        await request.save();
+
+        // 📧 SEND WELCOME EMAIL
+        try {
+            const emailMessage = `
+                <div style="font-family: sans-serif; max-w: 600px; margin: 0 auto; background-color: #0a0a0a; color: #fff; padding: 40px; border-radius: 20px; border: 1px solid #333;">
+                    <h1 style="color: #a855f7; text-align: center; text-transform: uppercase; font-style: italic;">Welcome to QuestLearn</h1>
+                    <p style="font-size: 16px;">Greetings ${user.name},</p>
+                    <p style="font-size: 16px; color: #ccc;">The High Council has reviewed your dossier and approved your application to become an Instructor.</p>
+                    <div style="background-color: #000; padding: 20px; border-radius: 10px; border: 1px solid #333; margin: 30px 0;">
+                        <p style="margin: 0 0 10px 0; color: #888; font-size: 12px; text-transform: uppercase; letter-spacing: 2px;">Your Credentials</p>
+                        <p style="margin: 0 0 10px 0;"><strong>Email:</strong> ${user.email}</p>
+                        <p style="margin: 0;"><strong>Temporary Passkey:</strong> <span style="color: #00f3ff; font-family: monospace; font-size: 18px;">${defaultPassword}</span></p>
+                    </div>
+                    <p style="font-size: 14px; color: #ff4444; font-weight: bold;">⚠️ IMPORTANT: Please log in and change your temporary passkey immediately.</p>
+                    <a href="${process.env.FRONTEND_URL || 'https://questlearn-six.vercel.app'}/login" style="display: block; width: 100%; text-align: center; background-color: #a855f7; color: #fff; padding: 15px; border-radius: 10px; text-decoration: none; font-weight: bold; margin-top: 30px; text-transform: uppercase; letter-spacing: 2px;">Access Creator Studio</a>
+                </div>
+            `;
+
+            await sendEmail({
+                email: user.email,
+                subject: 'Your QuestLearn Instructor Account is Ready!',
+                message: emailMessage
+            });
+            console.log(`Email successfully sent to ${user.email}`);
+        } catch (emailError) {
+            console.error("Email failed to send, but account was created:", emailError);
+        }
+
+        res.json({ msg: `Instructor created successfully! Welcome email dispatched.` });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Server Error');
+    }
+});
+
+// ==========================================
+// ❌ 7. REJECT INSTRUCTOR REQUEST
+// ==========================================
+router.post('/instructor-requests/:id/reject', [auth, adminAuth], async (req, res) => {
+    try {
+        const request = await InstructorRequest.findById(req.params.id);
+        if (!request) return res.status(404).json({ msg: 'Request not found' });
+
+        request.status = 'rejected';
+        await request.save();
+
+        res.json({ msg: 'Application rejected and archived.' });
+    } catch (err) {
+        res.status(500).send('Server Error');
     }
 });
 

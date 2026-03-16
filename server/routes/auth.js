@@ -5,7 +5,7 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const Analytics = require('../models/Analytics');
 const auth = require('../middleware/auth');
-
+const InstructorRequest = require('../models/InstructorRequest');
 // ==========================================
 // 1. REGISTER USER (Sign Up)
 // ==========================================
@@ -132,4 +132,37 @@ router.get('/', auth, async (req, res) => {
   }
 });
 
+
+// ==========================================
+// 3. SUBMIT INSTRUCTOR REQUEST (Public API)
+// ==========================================
+router.post('/request-instructor', async (req, res) => {
+    try {
+        const { name, email, institution, city, domain, experience, credentialFile } = req.body;
+
+        // 1. Check if user already exists in the system
+        let existingUser = await User.findOne({ email });
+        if (existingUser) {
+            return res.status(400).json({ msg: 'An account with this email already exists.' });
+        }
+
+        // 2. Check if they already applied
+        let existingRequest = await InstructorRequest.findOne({ email });
+        if (existingRequest) {
+            return res.status(400).json({ msg: 'An application for this email is already pending review.' });
+        }
+
+        // 3. Save the request
+        const newRequest = new InstructorRequest({
+            name, email, institution, city, domain, experience, credentialFile
+        });
+
+        await newRequest.save();
+        res.status(201).json({ msg: 'Application transmitted successfully! The High Council will review your dossier.' });
+
+    } catch (err) {
+        console.error("Instructor Request Error:", err.message);
+        res.status(500).json({ msg: 'Server error processing application.' });
+    }
+});
 module.exports = router;

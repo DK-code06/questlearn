@@ -74,23 +74,7 @@ const Register = () => {
 
           <form onSubmit={onSubmit} className="space-y-4">
             
-            {/* Role Selection Tabs */}
-            <div className="flex gap-2 mb-8 bg-black/40 p-1.5 rounded-2xl border border-gray-800">
-              <button
-                type="button"
-                onClick={() => setFormData({...formData, role: 'student'})}
-                className={`flex-1 py-3 rounded-xl font-black text-xs flex items-center justify-center gap-2 transition-all ${role === 'student' ? 'bg-neon-blue text-black shadow-lg shadow-neon-blue/20' : 'text-gray-500 hover:text-gray-300'}`}
-              >
-                <User size={16} /> STUDENT
-              </button>
-              <button
-                type="button"
-                onClick={() => setFormData({...formData, role: 'instructor'})}
-                className={`flex-1 py-3 rounded-xl font-black text-xs flex items-center justify-center gap-2 transition-all ${role === 'instructor' ? 'bg-purple-600 text-white shadow-lg shadow-purple-900/20' : 'text-gray-500 hover:text-gray-300'}`}
-              >
-                <Shield size={16} /> INSTRUCTOR
-              </button>
-            </div>
+
 
             <div className="space-y-1">
               <label className="text-[10px] font-black text-gray-500 uppercase ml-2 tracking-widest">Hero Name</label>

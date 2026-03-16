@@ -1,16 +1,19 @@
 import { useContext, useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
-import { Zap, LogOut, Layout, Users, Bell, Calendar, Trophy, User as UserIcon, Flame, Globe, Sword, Terminal, Menu, X } from 'lucide-react';
+import { Zap, LogOut, Layout, Users, Bell, Calendar, Trophy, User as UserIcon, Flame, Globe, Sword, Terminal, Menu, X, KeyRound } from 'lucide-react';
 import api from '../utils/api';
+import ChangePasswordModal from './ChangePasswordModal';
 
 const Navbar = () => {
   const { user, isAuthenticated, logout } = useContext(AuthContext) as any;
   const navigate = useNavigate();
   const [upcomingClasses, setUpcomingClasses] = useState<any[]>([]);
   const [showNotifications, setShowNotifications] = useState(false);
-  // ✅ NEW: Mobile menu state
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  
+  // ✅ NEW: State for the password modal
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
 
   useEffect(() => {
     if (isAuthenticated && user?.role === 'student') {
@@ -37,7 +40,6 @@ const Navbar = () => {
     navigate('/');
   };
 
-  // Helper to close mobile menu on click
   const closeMobileMenu = () => setMobileMenuOpen(false);
 
   return (
@@ -68,7 +70,7 @@ const Navbar = () => {
         <div className="flex items-center gap-3 lg:gap-10">
           {isAuthenticated ? (
             <>
-              {/* ✅ DESKTOP MISSION LINKS (Hidden on Mobile) */}
+              {/* DESKTOP MISSION LINKS (Hidden on Mobile) */}
               <div className="hidden xl:flex items-center gap-10 border-r border-gray-800 pr-10">
                 {user?.role === 'student' ? (
                   <>
@@ -156,7 +158,6 @@ const Navbar = () => {
                   <div className="w-8 h-8 md:w-10 md:h-10 bg-gray-900 border border-gray-800 rounded-full md:rounded-2xl flex items-center justify-center text-gray-400 group-hover:bg-neon-blue group-hover:text-black transition-all duration-500">
                     <UserIcon size={16} className="md:w-5 md:h-5" />
                   </div>
-                  {/* Text hidden on mobile to prevent horizontal scroll */}
                   <div className="hidden sm:flex flex-col pr-2 md:pr-0">
                     <span className="text-[10px] md:text-[11px] font-black text-white leading-none uppercase tracking-tight group-hover:text-neon-blue truncate max-w-[80px] md:max-w-none">
                       {user?.name || 'Hero'}
@@ -167,7 +168,16 @@ const Navbar = () => {
                   </div>
                 </Link>
 
-                {/* LOGOUT COMMAND */}
+                {/* ✅ NEW: CHANGE PASSWORD COMMAND (DESKTOP) */}
+                <button
+                  onClick={() => setShowPasswordModal(true)}
+                  className="hidden sm:block p-2 md:p-3.5 bg-gray-900 border border-gray-800 rounded-full md:rounded-2xl text-gray-500 hover:text-neon-blue hover:border-neon-blue/50 transition-all hover:scale-110 active:scale-95"
+                  title="Change Passkey"
+                >
+                  <KeyRound size={16} className="md:w-5 md:h-5" />
+                </button>
+
+                {/* LOGOUT COMMAND (DESKTOP) */}
                 <button
                   onClick={handleLogout}
                   className="hidden sm:block p-2 md:p-3.5 bg-gray-900 border border-gray-800 rounded-full md:rounded-2xl text-gray-500 hover:text-red-500 hover:border-red-500/50 transition-all hover:scale-110 active:scale-95"
@@ -176,7 +186,7 @@ const Navbar = () => {
                   <LogOut size={16} className="md:w-5 md:h-5" />
                 </button>
 
-                {/* ✅ MOBILE HAMBURGER MENU BUTTON */}
+                {/* MOBILE HAMBURGER MENU BUTTON */}
                 <button 
                   onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                   className="xl:hidden p-2 bg-gray-900 border border-gray-800 rounded-lg text-gray-400 hover:text-white transition-colors ml-1"
@@ -197,7 +207,7 @@ const Navbar = () => {
         </div>
       </div>
 
-      {/* ✅ MOBILE DROPDOWN MENU */}
+      {/* MOBILE DROPDOWN MENU */}
       {isAuthenticated && mobileMenuOpen && (
         <div className="xl:hidden absolute top-16 md:top-20 left-0 w-full bg-black/95 backdrop-blur-xl border-b border-gray-800 flex flex-col p-4 shadow-2xl animate-in slide-in-from-top-2">
           {user?.role === 'student' ? (
@@ -226,11 +236,19 @@ const Navbar = () => {
             </>
           )}
           
+          {/* ✅ NEW: CHANGE PASSWORD COMMAND (MOBILE) */}
+          <button onClick={() => { closeMobileMenu(); setShowPasswordModal(true); }} className="p-4 border-b border-gray-800 text-gray-300 hover:text-white font-black text-xs tracking-widest flex items-center gap-3 text-left w-full">
+            <KeyRound size={18} /> UPDATE PASSKEY
+          </button>
+
           <button onClick={handleLogout} className="p-4 text-red-500 hover:text-red-400 font-black text-xs tracking-widest flex items-center gap-3 text-left w-full mt-2">
             <LogOut size={18} /> ABANDON QUEST (LOGOUT)
           </button>
         </div>
       )}
+
+      {/* ✅ PASSWORD MODAL */}
+      {showPasswordModal && <ChangePasswordModal onClose={() => setShowPasswordModal(false)} />}
     </nav>
   );
 };

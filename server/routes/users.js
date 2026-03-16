@@ -5,7 +5,7 @@ const Progress = require('../models/Progress');
 const Course = require('../models/Course');
 const Analytics = require('../models/Analytics');
 const auth = require('../middleware/auth');
-
+const bcrypt = require('bcryptjs');
 // ==========================================
 // 📈 1. UPDATE PROGRESS, MARKS & XP
 // ==========================================
@@ -260,4 +260,30 @@ router.get('/ally-intel/:id', auth, async (req, res) => {
     }
 });
 
+// ==========================================
+// 🔐 CHANGE PASSWORD
+// ==========================================
+router.put('/change-password', auth, async (req, res) => {
+    const { currentPassword, newPassword } = req.body;
+
+    try {
+        const user = await User.findById(req.user.id);
+        
+        // 1. Verify current password
+        const isMatch = await bcrypt.compare(currentPassword, user.password);
+        if (!isMatch) {
+            return res.status(400).json({ msg: 'Current password is incorrect.' });
+        }
+
+        // 2. Hash and save new password
+        const salt = await bcrypt.genSalt(10);
+        user.password = await bcrypt.hash(newPassword, salt);
+        await user.save();
+
+        res.json({ msg: 'Passkey successfully updated.' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Server Error');
+    }
+});
 module.exports = router;

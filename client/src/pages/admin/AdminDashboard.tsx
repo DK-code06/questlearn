@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { 
   Users, BookOpen, AlertTriangle, BarChart3, Trash2, 
-  ShieldCheck, Clock, Zap, Target, RefreshCcw 
+  ShieldCheck, Clock, Zap, Target, RefreshCcw,
+  CheckCircle, XCircle, FileText 
 } from 'lucide-react';
 import api from '../../utils/api';
 
@@ -10,6 +11,7 @@ const AdminDashboard = () => {
     const [detailedData, setDetailedData] = useState<{students: any[], instructors: any[]}>({ students: [], instructors: [] });
     const [engagementData, setEngagementData] = useState<any[]>([]); 
     const [issues, setIssues] = useState<any[]>([]);
+    const [applications, setApplications] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
     const fetchAdminData = async () => {
@@ -29,6 +31,10 @@ const AdminDashboard = () => {
             // 4. Per-user engagement timing logic
             const engagementRes = await api.get('/admin/engagement/details');
             setEngagementData(engagementRes.data);
+
+            // 5. Pending Instructor Requests
+            const appRes = await api.get('/admin/instructor-requests');
+            setApplications(appRes.data);
 
             setLoading(false);
         } catch (err) {
@@ -51,6 +57,38 @@ const AdminDashboard = () => {
                     setDetailedData(prev => ({ ...prev, instructors: prev.instructors.filter(u => u._id !== id) }));
                 }
             } catch (err) { alert("Action failed."); }
+        }
+    };
+
+    // --- APPLICATION HANDLERS ---
+    const handleApprove = async (id: string) => {
+        try {
+            const res = await api.post(`/admin/instructor-requests/${id}/approve`);
+            alert(res.data.msg); // This shows the default password!
+            setApplications(prev => prev.filter(app => app._id !== id));
+            fetchAdminData(); // Refresh instructor list
+        } catch (err: any) {
+            alert(err.response?.data?.msg || "Failed to approve.");
+        }
+    };
+
+    const handleReject = async (id: string) => {
+        if(window.confirm("Are you sure you want to reject this applicant?")) {
+            try {
+                await api.post(`/admin/instructor-requests/${id}/reject`);
+                setApplications(prev => prev.filter(app => app._id !== id));
+            } catch (err) {
+                alert("Failed to reject.");
+            }
+        }
+    };
+
+    const viewCredential = (base64Data: string) => {
+        const w = window.open('about:blank');
+        if(w) {
+            w.document.write(`<iframe src="${base64Data}" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>`);
+        } else {
+            alert("Popup blocked! Please allow popups to view credentials.");
         }
     };
 
@@ -144,6 +182,69 @@ const AdminDashboard = () => {
                     </div>
                 </div>
             </div>
+
+            {/* --- NEW: PENDING INSTRUCTOR APPLICATIONS --- */}
+            {applications.length > 0 && (
+                <div className="mt-8 bg-purple-900/10 border border-purple-500/30 p-8 rounded-3xl shadow-2xl mb-8">
+                    <h3 className="text-xl font-black mb-6 flex items-center gap-2 text-purple-400 uppercase tracking-tighter">
+                        <ShieldCheck /> Pending Instructor Applications ({applications.length})
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {applications.map(app => (
+                            <div key={app._id} className="bg-[#0f172a] border border-gray-800 p-6 rounded-2xl flex flex-col justify-between">
+                                <div>
+                                    <div className="flex justify-between items-start mb-4">
+                                        <div>
+                                            <h4 className="text-lg font-black text-white uppercase">{app.name}</h4>
+                                            <p className="text-xs text-gray-500 font-bold">{app.email}</p>
+                                        </div>
+                                        <span className="bg-yellow-500/20 text-yellow-500 text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest">Pending Review</span>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4 mb-6 text-xs">
+                                        <div>
+                                            <p className="text-gray-500 uppercase font-black text-[9px] tracking-widest">Domain</p>
+                                            <p className="text-white font-bold">{app.domain}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-gray-500 uppercase font-black text-[9px] tracking-widest">Experience</p>
+                                            <p className="text-white font-bold">{app.experience} Years</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-gray-500 uppercase font-black text-[9px] tracking-widest">Institution</p>
+                                            <p className="text-white font-bold">{app.institution}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-gray-500 uppercase font-black text-[9px] tracking-widest">Location</p>
+                                            <p className="text-white font-bold">{app.city}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="flex gap-3 mt-auto pt-4 border-t border-gray-800">
+                                    <button 
+                                        onClick={() => viewCredential(app.credentialFile)}
+                                        className="flex-1 bg-gray-800 hover:bg-gray-700 text-white py-2 rounded-xl text-[10px] font-black uppercase flex items-center justify-center gap-2 transition-colors"
+                                    >
+                                        <FileText size={14}/> View File
+                                    </button>
+                                    <button 
+                                        onClick={() => handleApprove(app._id)}
+                                        className="flex-1 bg-green-600 hover:bg-green-500 text-white py-2 rounded-xl text-[10px] font-black uppercase flex items-center justify-center gap-2 transition-colors shadow-lg shadow-green-900/20"
+                                    >
+                                        <CheckCircle size={14}/> Approve
+                                    </button>
+                                    <button 
+                                        onClick={() => handleReject(app._id)}
+                                        className="bg-red-900/30 hover:bg-red-600 text-red-500 hover:text-white px-4 py-2 rounded-xl transition-colors"
+                                        title="Reject"
+                                    >
+                                        <XCircle size={14}/>
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
 
             {/* --- 4. INSTRUCTOR IMPACT ANALYTICS --- */}
             <div className="mt-8 bg-[#0f172a] border border-gray-800 p-8 rounded-3xl shadow-2xl mb-8">
