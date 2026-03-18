@@ -1,5 +1,4 @@
 import { useState, useEffect, useContext } from 'react';
-// 🛠️ Added Flame, Award, CheckCircle for the Dossier view
 import { Search, UserPlus, Users, MessageSquare, Terminal, ShieldCheck, Check, X, Flame, Award, CheckCircle } from 'lucide-react';
 import api from '../../utils/api';
 import { AuthContext } from '../../context/AuthContext';
@@ -15,7 +14,6 @@ const SocialHub = () => {
   const { user } = useContext(AuthContext) as any;
   const [chatFriend, setChatFriend] = useState<any>(null);
 
-  // 🟢 NEW: Ally Intel States
   const [selectedAllyStats, setSelectedAllyStats] = useState<any>(null);
   const [, setIntelLoading] = useState(false);
 
@@ -36,7 +34,6 @@ const SocialHub = () => {
     }
   };
 
-  // 🟢 NEW: Fetch Ally Detail Logic
   const viewAllyDossier = async (allyId: string) => {
     setIntelLoading(true);
     try {
@@ -83,7 +80,7 @@ const SocialHub = () => {
     <div className="flex h-[calc(100vh-80px)] bg-black overflow-hidden border-t border-gray-800 selection:bg-neon-blue selection:text-black font-sans">
       
       {/* 1. LEFT SIDEBAR: ALLIES LIST & SEARCH */}
-      <div className="w-full md:w-[400px] border-r border-gray-800 flex flex-col bg-[#050505]">
+      <div className={`w-full md:w-[400px] border-r border-gray-800 flex-col bg-[#050505] ${chatFriend ? 'hidden md:flex' : 'flex'}`}>
         <div className="p-6 bg-[#0a0a0a] border-b border-gray-800">
           <div className="flex items-center justify-between mb-6">
             <h1 className="text-2xl font-black text-white italic tracking-tighter uppercase">Social Hub</h1>
@@ -151,8 +148,10 @@ const SocialHub = () => {
                {searchResults.map((u) => (
                  <div key={u._id} className="bg-gray-900/40 border border-gray-800 p-4 rounded-2xl flex justify-between items-center group hover:border-neon-blue/40 transition-all">
                     <div className="flex items-center gap-3">
-                       <div className="w-10 h-10 bg-black border border-gray-700 rounded-xl flex items-center justify-center font-black text-gray-400 uppercase">{u.name.charAt(0)}</div>
-                       <p className="font-bold text-white text-sm">{u.name}</p>
+                        <div className="w-10 h-10 rounded-xl border border-gray-700 overflow-hidden bg-black flex items-center justify-center font-black text-gray-400 uppercase">
+                           {u.profilePic ? <img src={u.profilePic} className="w-full h-full object-cover" /> : u.name.charAt(0)}
+                        </div>
+                        <p className="font-bold text-white text-sm">{u.name}</p>
                     </div>
                     <button onClick={() => sendRequest(u._id)} className="bg-neon-blue text-black px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-transform">Request</button>
                  </div>
@@ -163,28 +162,18 @@ const SocialHub = () => {
       </div>
 
       {/* 2. RIGHT SIDE: THE CHAT VIEWPORT */}
-      <div className="hidden md:flex flex-1 flex-col bg-[#020202] relative">
+      <div className={`${chatFriend ? 'flex' : 'hidden md:flex'} flex-1 flex-col bg-[#020202] relative`}>
         {chatFriend ? (
           <div className="h-full w-full flex flex-col animate-in fade-in duration-500">
-            <div className="p-6 bg-[#0a0a0a] border-b border-gray-800 flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl border border-gray-700 overflow-hidden bg-gray-900">
-                   {chatFriend.profilePic ? <img src={chatFriend.profilePic} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center font-black text-gray-600">{chatFriend.name.charAt(0)}</div>}
-                </div>
-                <div>
-                   <h2 className="text-lg font-black text-white uppercase tracking-tighter flex items-center gap-2">
-                    {chatFriend.name}
-                    {chatFriend.isOnline && <ShieldCheck size={14} className="text-neon-blue" />}
-                   </h2>
-                   <p className={`text-[10px] font-black uppercase tracking-widest ${chatFriend.isOnline ? 'text-green-500' : 'text-gray-600'}`}>
-                    {chatFriend.isOnline ? "Signal Synchronized" : "Terminal Offline"}
-                   </p>
-                </div>
-              </div>
-              <button onClick={() => setChatFriend(null)} className="text-gray-500 hover:text-white transition-colors"><X size={24} /></button>
-            </div>
             <div className="flex-1 overflow-hidden relative">
-               <ChatWindow myId={user._id} myName={user.name} friendId={chatFriend._id} friendName={chatFriend.name} onClose={() => setChatFriend(null)} />
+               <ChatWindow 
+                  myId={user._id} 
+                  myName={user.name} 
+                  friendId={chatFriend._id} 
+                  friendName={chatFriend.name} 
+                  friendPic={chatFriend.profilePic} 
+                  onClose={() => setChatFriend(null)} 
+               />
             </div>
           </div>
         ) : (

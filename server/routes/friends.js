@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const User = require('../models/User');
-const Chat = require('../models/Chat'); // ✅ Make sure this is imported
+const Chat = require('../models/Chat'); 
 const auth = require('../middleware/auth');
 
 // ==========================================
@@ -16,7 +16,7 @@ router.get('/search', auth, async (req, res) => {
       name: { $regex: q, $options: 'i' },
       _id: { $ne: req.user.id },
       role: 'student'
-    }).select('name email avatar isOnline');
+    }).select('name email profilePic isOnline'); // 🟢 FIX 1: Changed 'avatar' to 'profilePic'
 
     res.json(users);
   } catch (err) {
@@ -78,8 +78,8 @@ router.put('/accept/:id', auth, async (req, res) => {
 router.get('/', auth, async (req, res) => {
   try {
     const user = await User.findById(req.user.id)
-      .populate('friends', 'name email isOnline')
-      .populate('friendRequests', 'name email');
+      .populate('friends', 'name email profilePic isOnline') // 🟢 FIX 2: Added profilePic
+      .populate('friendRequests', 'name email profilePic');  // 🟢 Added profilePic here too just in case
     
     res.json({
       friends: user.friends,
@@ -95,7 +95,6 @@ router.get('/', auth, async (req, res) => {
 // ==========================================
 router.get('/chat/:friendId', auth, async (req, res) => {
   try {
-    // 🛠️ BUG FIX: Use Chat.find, not User.find
     const messages = await Chat.find({
       type: 'private',
       $or: [
