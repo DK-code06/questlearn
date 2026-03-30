@@ -1,10 +1,13 @@
-import { useState } from 'react';
+import { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Code, Users, Trophy, Loader2 } from 'lucide-react';
 import api from '../utils/api';
+import { AuthContext } from '../context/AuthContext'; // Import AuthContext
 
 const Home = () => {
   const navigate = useNavigate();
+  // Bring in isAuthenticated and user from context
+  const { isAuthenticated, user } = useContext(AuthContext) as any;
   const [loading, setLoading] = useState(false);
   
   // State for the Instructor Request Form
@@ -86,18 +89,29 @@ const Home = () => {
             </p>
             
             <div className="flex justify-center gap-4">
-                <button 
-                    onClick={() => navigate('/register')}
-                    className="bg-neon-blue text-black px-8 py-4 rounded-full font-black text-lg hover:bg-cyan-400 transition-all hover:scale-105 shadow-[0_0_20px_rgba(34,211,238,0.4)]"
-                >
-                    START GAME
-                </button>
-                <button 
-                    onClick={() => navigate('/login')}
-                    className="bg-gray-900 text-white border border-gray-700 px-8 py-4 rounded-full font-bold text-lg hover:bg-gray-800 transition-all"
-                >
-                    RESUME
-                </button>
+                {isAuthenticated ? (
+                    <button 
+                        onClick={() => navigate(user?.role === 'instructor' ? '/instructor/dashboard' : '/student/dashboard')}
+                        className="bg-neon-blue text-black px-8 py-4 rounded-full font-black text-lg hover:bg-cyan-400 transition-all hover:scale-105 shadow-[0_0_20px_rgba(34,211,238,0.4)]"
+                    >
+                        GO TO DASHBOARD
+                    </button>
+                ) : (
+                    <>
+                        <button 
+                            onClick={() => navigate('/register')}
+                            className="bg-neon-blue text-black px-8 py-4 rounded-full font-black text-lg hover:bg-cyan-400 transition-all hover:scale-105 shadow-[0_0_20px_rgba(34,211,238,0.4)]"
+                        >
+                            START GAME
+                        </button>
+                        <button 
+                            onClick={() => navigate('/login')}
+                            className="bg-gray-900 text-white border border-gray-700 px-8 py-4 rounded-full font-bold text-lg hover:bg-gray-800 transition-all"
+                        >
+                            RESUME
+                        </button>
+                    </>
+                )}
             </div>
         </div>
       </div>

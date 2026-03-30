@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, Lock, KeyRound, Loader2 } from 'lucide-react';
+import { X, Lock, KeyRound, Loader2, CheckCircle } from 'lucide-react';
 import api from '../utils/api';
 
 const ChangePasswordModal = ({ onClose }: { onClose: () => void }) => {
@@ -35,13 +35,29 @@ const ChangePasswordModal = ({ onClose }: { onClose: () => void }) => {
     };
 
     return (
-        <div className="fixed inset-0 bg-black/90 backdrop-blur-sm z-[200] flex items-center justify-center p-4 animate-in fade-in duration-200">
-            <div className="bg-[#0f172a] border border-neon-blue/30 w-full max-w-md rounded-[2.5rem] p-8 shadow-[0_0_50px_rgba(0,243,255,0.15)] relative">
-                <button onClick={onClose} className="absolute top-6 right-6 text-gray-500 hover:text-white transition-colors">
+        /* 1. Force full screen (w-screen h-screen) 
+          2. Force position top-left (top-0 left-0) 
+          3. Massive z-index (z-[9999]) to break out of Navbar
+        */
+        <div 
+            className="fixed top-0 left-0 w-screen h-screen bg-black/90 backdrop-blur-md z-[9999] flex items-center justify-center p-4 m-0"
+            onClick={onClose} /* Clicking the dark background closes the modal */
+        >
+            <div 
+                className="bg-[#0f172a] border border-neon-blue/30 w-full max-w-md rounded-[2.5rem] p-8 shadow-[0_0_50px_rgba(0,243,255,0.15)] relative"
+                onClick={(e) => e.stopPropagation()} /* Prevents clicks inside the box from closing it */
+            >
+                {/* HIGHLY VISIBLE CLOSE BUTTON */}
+                <button 
+                    type="button" 
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); onClose(); }}
+                    className="absolute top-4 right-4 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white p-2 rounded-full transition-all z-50"
+                    title="Cancel"
+                >
                     <X size={24} />
                 </button>
 
-                <div className="flex flex-col items-center mb-8">
+                <div className="flex flex-col items-center mb-8 mt-2">
                     <div className="w-16 h-16 bg-neon-blue/10 rounded-2xl flex items-center justify-center text-neon-blue border border-neon-blue/20 mb-4 shadow-inner">
                         <KeyRound size={32} />
                     </div>
@@ -84,6 +100,4 @@ const ChangePasswordModal = ({ onClose }: { onClose: () => void }) => {
     );
 };
 
-// Quick fix for the missing icon above:
-import { CheckCircle } from 'lucide-react';
 export default ChangePasswordModal;

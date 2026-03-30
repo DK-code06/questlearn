@@ -3,27 +3,41 @@ const router = express.Router();
 const auth = require('../middleware/auth');
 const User = require('../models/User');
 
-// 🛒 Buy a Streak Freeze (Cost: 500 Points)
-router.post('/buy-freeze', auth, async (req, res) => {
+// 🛒 Universal Shop Purchase Route
+router.post('/buy/:itemId', auth, async (req, res) => {
     try {
         const user = await User.findById(req.user.id);
-        const COST = 500;
+        const { itemId } = req.params;
+        
+        let cost = 0;
+        if (itemId === 'streak_freeze') cost = 500;
+        else if (itemId === 'xp_booster') cost = 1200;
+        else return res.status(400).json({ msg: "Item not found in the shop." });
 
-        if (user.gamification.totalPoints < COST) {
-            return res.status(400).json({ msg: "Not enough XP. Keep questing!" });
+        if (user.gamification.totalPoints < cost) {
+            return res.status(400).json({ msg: "Not enough XP. Keep learning!" });
         }
 
-        // Deduct points and add to inventory
-        user.gamification.totalPoints -= COST;
-        user.gamification.inventory.streakFreeze += 1;
+        // Deduct points
+        user.gamification.totalPoints -= cost;
+
+        // Add to inventory safely
+        if (!user.gamification.inventory) user.gamification.inventory = {};
+        
+        if (itemId === 'streak_freeze') {
+            user.gamification.inventory.streakFreeze = (user.gamification.inventory.streakFreeze || 0) + 1;
+        }
+        if (itemId === 'xp_booster') {
+            user.gamification.inventory.xpBoosters = (user.gamification.inventory.xpBoosters || 0) + 1;
+        }
 
         await user.save();
-        res.json({ 
-            msg: "Shield Acquired! Your streak is protected.", 
-            inventory: user.gamification.inventory,
-            balance: user.gamification.totalPoints 
+        res.json({
+            msg: "Item successfully purchased!",
+            gamification: user.gamification
         });
     } catch (err) {
+        console.error(err);
         res.status(500).send('Server Error');
     }
 });
