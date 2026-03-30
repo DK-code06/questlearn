@@ -6,6 +6,7 @@ const User = require('../models/User');
 const Analytics = require('../models/Analytics');
 const auth = require('../middleware/auth');
 const InstructorRequest = require('../models/InstructorRequest');
+
 // ==========================================
 // 1. REGISTER USER (Sign Up)
 // ==========================================
@@ -49,7 +50,7 @@ router.post('/register', async (req, res) => {
 });
 
 // ==========================================
-// 2. LOGIN USER (With Streak Fix)
+// 2. LOGIN USER (With Streak Fix & Speed Boost)
 // ==========================================
 router.post('/login', async (req, res) => {
   const { email, password } = req.body;
@@ -96,24 +97,30 @@ router.post('/login', async (req, res) => {
 
     user.gamification.lastActive = now;
     user.isOnline = true;
-    await user.save();
+    await user.save(); // Wait for user save
 
     const payload = { user: { id: user.id, role: user.role } };
 
-    await Analytics.create({
+    // ⚡ SPEED FIX: Do not 'await' analytics. Let it save in the background!
+    Analytics.create({
       user: user._id,
       role: user.role,
       action: 'login',
       startTime: new Date()
-    });
+    }).catch(err => console.error("Analytics Error:", err.message));
 
     jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '5d' }, (err, token) => {
       if (err) throw err;
+      
+      // ⚡ SPEED FIX: Send the whole 'user' object back so frontend doesn't have to ask for it again
+      user.password = undefined; // Don't send password hash to client
+      
       res.json({
         token,
         role: user.role,
         streak: user.gamification.streak,
-        freezes: user.gamification.inventory?.streakFreeze || 0
+        freezes: user.gamification.inventory?.streakFreeze || 0,
+        user: user // Inject user profile into payload
       });
     });
   } catch (err) {
@@ -122,6 +129,9 @@ router.post('/login', async (req, res) => {
   }
 });
 
+// ==========================================
+// GET CURRENT USER PROFILE
+// ==========================================
 router.get('/', auth, async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select('-password');
@@ -131,7 +141,6 @@ router.get('/', auth, async (req, res) => {
     res.status(500).send('Server Error');
   }
 });
-
 
 // ==========================================
 // 3. SUBMIT INSTRUCTOR REQUEST (Public API)
@@ -165,4 +174,5 @@ router.post('/request-instructor', async (req, res) => {
         res.status(500).json({ msg: 'Server error processing application.' });
     }
 });
+
 module.exports = router;

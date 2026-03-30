@@ -18,8 +18,8 @@ const Login = () => {
       // 📡 Request Authentication
       const res = await api.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/auth/login`, formData);
       
-      // 🔐 Save session to Context & LocalStorage
-      login(res.data.token, res.data.role);
+      // ⚡ SPEED FIX: Pass the entire user object immediately so the UI doesn't have to fetch it again
+      login(res.data.token, res.data.role, res.data.user);
 
       // 🔀 DYNAMIC REDIRECT LOGIC
       // The role is baked into the response from the Backend logic we set up earlier

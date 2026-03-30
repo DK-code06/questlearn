@@ -8,7 +8,8 @@ interface AuthContextType {
   loading: boolean;
   user: any;
   setUser: (user: any) => void; 
-  login: (token: string, role: string) => void;
+  // ✅ FIX: Added userData as an optional parameter
+  login: (token: string, role: string, userData?: any) => void;
   logout: () => void;
 }
 
@@ -27,7 +28,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return;
       }
       
-      // ✅ FIX: Ensure loading is true while we fetch the user data after login
+      // ⚡ SPEED FIX: If we already have the user (passed from login), skip fetching!
+      if (user) {
+        setLoading(false);
+        return;
+      }
+      
       setLoading(true);
       
       try {
@@ -46,11 +52,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
     
     loadUser();
-  }, [token]); // This triggers every time the token changes (like on login)
+  }, [token, user]); // Added user to dependency array
 
-  const login = (newToken: string, role: string) => {
+  // ⚡ SPEED FIX: Accept userData immediately during login
+  const login = (newToken: string, role: string, userData?: any) => {
     localStorage.setItem('token', newToken);
     setToken(newToken);
+    if (userData) {
+        setUser(userData); // Instantly set user profile
+    }
     setIsAuthenticated(true);
   };
 
