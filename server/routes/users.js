@@ -6,11 +6,14 @@ const Course = require('../models/Course');
 const Analytics = require('../models/Analytics');
 const auth = require('../middleware/auth');
 const bcrypt = require('bcryptjs');
+
 // ==========================================
 // 📈 1. UPDATE PROGRESS, MARKS & XP
 // ==========================================
 router.put('/progress', auth, async (req, res) => {
     const { courseId, sectionId, xpEarned, score, totalPossible } = req.body;
+
+    if (!sectionId) return res.status(400).json({ msg: 'Missing Section ID' });
 
     try {
         let progress = await Progress.findOne({ student: req.user.id, course: courseId });
@@ -21,11 +24,11 @@ router.put('/progress', auth, async (req, res) => {
                 course: courseId,
                 completedSections: []
             });
-            await progress.save();
         }
 
         const alreadyDone = progress.completedSections.some(s => 
             (s.sectionId && s.sectionId.toString() === sectionId.toString()) || 
+            (s._id && s._id.toString() === sectionId.toString()) ||
             (s.toString() === sectionId.toString())
         );
 
@@ -33,27 +36,20 @@ router.put('/progress', auth, async (req, res) => {
             return res.status(200).json({ msg: 'Level already cleared' });
         }
 
-        const updatedProgress = await Progress.findOneAndUpdate(
-            { student: req.user.id, course: courseId },
-            { 
-                $push: { 
-                    completedSections: {
-                        sectionId: sectionId.toString(),
-                        score: Number(score) || 0,
-                        totalPossible: Number(totalPossible) || 10,
-                        completedAt: new Date()
-                    } 
-                } 
-            },
-            { new: true } 
-        );
+        progress.completedSections.push({
+            sectionId: sectionId.toString(),
+            score: Number(score) || 0,
+            totalPossible: Number(totalPossible) || 10,
+            completedAt: new Date()
+        });
 
         const courseData = await Course.findById(courseId);
-        if (courseData && updatedProgress.completedSections.length === courseData.sections.length) {
-            updatedProgress.isCompleted = true;
-            updatedProgress.completionDate = new Date();
-            await updatedProgress.save();
+        if (courseData && progress.completedSections.length >= courseData.sections.length) {
+            progress.isCompleted = true;
+            progress.completionDate = new Date();
         }
+
+        await progress.save();
 
         const user = await User.findById(req.user.id);
         if (user) {
@@ -93,40 +89,64 @@ router.put('/progress', auth, async (req, res) => {
                 medals: user.gamification.medals
             });
         }
+        
         res.status(404).json({ msg: 'Hero not found' });
     } catch (err) {
+        console.error("Progress Save Error:", err);
         res.status(500).json({ msg: 'Server Error', error: err.message });
     }
 });
 
 // ==========================================
+// 📖 GET COURSE PROGRESS
+// ==========================================
+router.get('/progress/:courseId', auth, async (req, res) => {
+    try {
+        const progress = await Progress.findOne({ 
+            student: req.user.id, 
+            course: req.params.courseId 
+        });
+        
+        // ✅ Never return 404 — return empty array so frontend doesn't crash
+        if (!progress) {
+            return res.json({ completedSections: [] });
+        }
+
+        // ✅ Normalize: plain JS (no TypeScript syntax!)
+        const normalized = progress.toObject();
+        normalized.completedSections = normalized.completedSections.map(s => ({
+            ...s,
+            sectionId: s.sectionId ? s.sectionId.toString() : ''
+        }));
+
+        res.json(normalized);
+
+    } catch (err) {
+        console.error("Progress Fetch Error:", err.message);
+        res.status(500).send('Server Error');
+    }
+});
+
+// ==========================================
 // 👤 2. UPDATE PROFILE (Modify Dossier)
-// ✅ FIXED: Added profilePic and ensured persistence
 // ==========================================
 router.put('/update-profile', auth, async (req, res) => {
-    // Destructure all possible fields from the body
     const { name, dob, domain, currentStudying, city, country, profilePic } = req.body;
     
     try {
         const user = await User.findById(req.user.id);
         if (!user) return res.status(404).json({ msg: "Hero record not found" });
 
-        // Update Top Level Fields if they exist in request
         if (name) user.name = name;
         if (dob) user.dob = dob;
         if (domain) user.domain = domain;
         if (currentStudying) user.currentStudying = currentStudying;
-        
-        // 📸 SAVE PROFILE PHOTO
         if (profilePic) user.profilePic = profilePic;
-
-        // 🟢 Robust Location Update
         if (city !== undefined) user.location.city = city;
         if (country !== undefined) user.location.country = country;
 
         await user.save();
         
-        // Return the full updated user object (minus password) to update frontend context
         const userResponse = await User.findById(req.user.id).select('-password');
         res.json(userResponse);
     } catch (err) {
@@ -218,13 +238,12 @@ router.get('/leaderboard/:timeframe', auth, async (req, res) => {
         res.status(500).send('Server Error');
     }
 });
+
 // ==========================================
 // 🛡️ GET ALLY INTEL (For Social Hub Dossier)
-// ✅ NEW: Aggregates level, streak, and mission history
 // ==========================================
 router.get('/ally-intel/:id', auth, async (req, res) => {
     try {
-        // 1. Fetch Ally profile and gamification stats
         const ally = await User.findById(req.params.id)
             .select('name profilePic gamification location');
         
@@ -232,7 +251,6 @@ router.get('/ally-intel/:id', auth, async (req, res) => {
             return res.status(404).json({ msg: "Hero not found in database" });
         }
 
-        // 2. Fetch the Ally's completed mission history
         const progresses = await Progress.find({ 
             student: req.params.id, 
             isCompleted: true 
@@ -242,7 +260,6 @@ router.get('/ally-intel/:id', auth, async (req, res) => {
             title: p.course?.title || "Classified Operation"
         }));
 
-        // 3. Construct the response for the Dossier modal
         res.json({
             name: ally.name,
             profilePic: ally.profilePic,
@@ -269,13 +286,11 @@ router.put('/change-password', auth, async (req, res) => {
     try {
         const user = await User.findById(req.user.id);
         
-        // 1. Verify current password
         const isMatch = await bcrypt.compare(currentPassword, user.password);
         if (!isMatch) {
             return res.status(400).json({ msg: 'Current password is incorrect.' });
         }
 
-        // 2. Hash and save new password
         const salt = await bcrypt.genSalt(10);
         user.password = await bcrypt.hash(newPassword, salt);
         await user.save();
@@ -286,4 +301,5 @@ router.put('/change-password', auth, async (req, res) => {
         res.status(500).send('Server Error');
     }
 });
+
 module.exports = router;

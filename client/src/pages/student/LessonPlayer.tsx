@@ -59,6 +59,13 @@ const LessonPlayer = () => {
   const [newMessage, setNewMessage] = useState('');
   const chatScrollRef = useRef<HTMLDivElement>(null);
 
+  // Auto-scroll to top when section changes
+  useEffect(() => {
+    if (scrollContainerRef.current) {
+        scrollContainerRef.current.scrollTo(0, 0);
+    }
+  }, [sectionIndex]);
+
   useEffect(() => {
       const nextTemplate = CODE_TEMPLATES[language as keyof typeof CODE_TEMPLATES] || "";
       if (!code || code === templateRef.current) {
@@ -82,12 +89,16 @@ const LessonPlayer = () => {
             setHasRated(true);
         }
 
-        try {
-            const progressRes = await api.get(`/users/progress/${courseId}`);
-            setCompletedSections(progressRes.data.completedSections || []);
-        } catch (e) {
-            setCompletedSections([]);
-        }
+try {
+    const progressRes = await api.get(`/users/progress/${courseId}`);
+    // Normalize to plain string IDs so comparison works everywhere
+    const completedIds = (progressRes.data.completedSections || []).map(
+        (s: any) => s.sectionId?.toString() || s._id?.toString() || s.toString()
+    );
+    setCompletedSections(completedIds);
+} catch (e) {
+    setCompletedSections([]);
+}
 
         const idx = parseInt(sectionIndex || '0');
         if (courseRes.data.sections && courseRes.data.sections[idx]) {
@@ -103,7 +114,6 @@ const LessonPlayer = () => {
         setShowVictory(false);
         setQuizMode(false);
         setOutput("");
-        if (scrollContainerRef.current) scrollContainerRef.current.scrollTop = 0;
         
         resetQuiz();
       } catch (err) {
@@ -189,9 +199,10 @@ const LessonPlayer = () => {
     }
   };
 
-  const finishLevel = async () => {
+ const finishLevel = async () => {
     if (completing) return;
     
+    // Check Quiz Accuracy (Requires at least 50% to pass)
     if (currentSection.quiz?.length > 0) {
       if (quizScore < currentSection.quiz.length / 2) {
         alert(`Mission Failure: Score ${quizScore}/${currentSection.quiz.length}. 50% accuracy required.`);
@@ -206,6 +217,7 @@ const LessonPlayer = () => {
       const marksObtained = currentSection.quiz?.length > 0 ? quizScore : 10;
       const totalPossible = currentSection.quiz?.length > 0 ? currentSection.quiz.length : 10;
 
+      // 📡 Transmit progress to the backend
       await api.put('/users/progress', {
         courseId: course._id,
         sectionId: currentSection._id,
@@ -214,15 +226,18 @@ const LessonPlayer = () => {
         totalPossible: totalPossible
       });
 
+      // ✅ Only show victory IF the server successfully saved the data
       setXpEarned(currentSection.points || 10);
       setShowVictory(true);
-    } catch (err) {
-      setShowVictory(true);
+
+    } catch (err: any) {
+      console.error("Failed to save progress:", err);
+      // 🚨 STOP THE AMNESIA: Alert the user instead of faking a victory
+      alert(err.response?.data?.msg || "CRITICAL ERROR: The server failed to save your progress! Please click submit again.");
     } finally {
       setCompleting(false);
     }
   };
-
   const fetchChatHistory = async () => {
     try {
         const res = await api.get(`/courses/${courseId}/chat`);
@@ -268,6 +283,7 @@ const LessonPlayer = () => {
   }
 
   const hasQuiz = currentSection.quiz && currentSection.quiz.length > 0;
+  const isFinalLevel = parseInt(sectionIndex || '0') + 1 === course?.sections?.length;
 
   // --- VICTORY SCREEN ---
   if (showVictory) {
@@ -282,15 +298,18 @@ const LessonPlayer = () => {
             <span className="text-yellow-400 font-black text-xl md:text-2xl">+{xpEarned} XP</span>
           </div>
           <div className="flex flex-col sm:flex-row gap-3 md:gap-4">
-            <button onClick={() => navigate(`/student/course/${courseId}`)} className="w-full sm:w-auto flex-1 py-3 md:py-4 rounded-xl font-bold text-gray-500 hover:text-white transition-colors border border-gray-800 text-sm">MAP</button>
+            <button onClick={() => navigate(`/student/course/${courseId}`, { state: { refreshProgress: true } })} className="w-full sm:w-auto flex-1 py-3 md:py-4 rounded-xl font-bold text-gray-500 hover:text-white transition-colors border border-gray-800 text-sm">MAP</button>
             <button onClick={() => {
               const nextIdx = parseInt(sectionIndex || '0') + 1;
               if (course.sections && nextIdx < course.sections.length) {
                 navigate(`/student/course/${courseId}/play/${nextIdx}`);
               } else {
-                navigate(`/student/dashboard`);
+                // ✨ FIX: If it's the last level, route them back to the map to claim the certificate!
+                navigate(`/student/course/${courseId}`, { state: { refreshProgress: true } });
               }
-            }} className="w-full sm:w-auto flex-1 bg-yellow-500 hover:bg-yellow-400 text-black font-black py-3 md:py-4 rounded-xl shadow-lg uppercase transition-transform hover:scale-105 text-sm">Next Mission</button>
+            }} className="w-full sm:w-auto flex-1 bg-yellow-500 hover:bg-yellow-400 text-black font-black py-3 md:py-4 rounded-xl shadow-lg uppercase transition-transform hover:scale-105 text-sm">
+                {isFinalLevel ? "Claim Certificate" : "Next Mission"}
+            </button>
           </div>
         </div>
       </div>
@@ -383,7 +402,8 @@ const LessonPlayer = () => {
     <div className="flex flex-col h-screen bg-black text-white overflow-hidden font-sans">
       {/* Header */}
       <div className="bg-gray-900/80 backdrop-blur-md p-3 md:p-4 flex items-center justify-between border-b border-white/5 z-20 shrink-0">
-        <button onClick={() => navigate(`/student/course/${courseId}`)} className="flex items-center gap-1 md:gap-2 text-gray-500 hover:text-white font-bold transition-all group text-xs md:text-base">
+        {/* ✨ FIX: Top left back button now forces a map refresh as well */}
+        <button onClick={() => navigate(`/student/course/${courseId}`, { state: { refreshProgress: true } })} className="flex items-center gap-1 md:gap-2 text-gray-500 hover:text-white font-bold transition-all group text-xs md:text-base">
           <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform md:w-5 md:h-5" /> <span className="hidden sm:inline">BACK TO MAP</span><span className="sm:hidden">BACK</span>
         </button>
         <div className="text-center truncate px-2">
@@ -396,7 +416,6 @@ const LessonPlayer = () => {
         </div>
       </div>
 
-      {/* ✅ RESPONSIVE STACKING LAYOUT */}
       <div className="flex-1 flex flex-col lg:flex-row overflow-y-auto lg:overflow-hidden">
         
         {/* Left/Top Content Area (Video/Text/Description) */}
@@ -408,17 +427,35 @@ const LessonPlayer = () => {
                 <div className="aspect-video bg-gray-900 rounded-2xl md:rounded-[2rem] overflow-hidden border-2 md:border-4 border-gray-800 shadow-2xl">
                   <iframe src={getEmbedUrl(currentSection.videoUrl)} className="w-full h-full" allowFullScreen title="Video Content" />
                 </div>
-                {!hasQuiz && (
-                  <div className="bg-gray-900 p-6 md:p-8 rounded-2xl md:rounded-3xl border border-white/5 flex flex-col sm:flex-row items-center justify-between gap-4 md:gap-6 text-center sm:text-left">
-                    <div>
-                      <h3 className="text-lg md:text-xl font-black uppercase italic">Objective Complete?</h3>
-                      <p className="text-gray-500 text-xs md:text-sm mt-1">Synchronize your progress once the transmission ends.</p>
-                    </div>
-                    <button onClick={finishLevel} disabled={completing} className="w-full sm:w-auto bg-green-600 hover:bg-green-500 text-white font-black py-3 md:py-4 px-8 md:px-12 rounded-xl md:rounded-2xl shadow-xl transition-all active:scale-95 flex items-center justify-center gap-2 md:gap-3 text-sm md:text-base">
-                      {completing ? <Loader2 className="animate-spin w-4 h-4 md:w-5 md:h-5" /> : <CheckCircle className="w-4 h-4 md:w-5 md:h-5" />} SUBMIT MISSION
-                    </button>
+
+                {/* Intelligent CTA logic */}
+                <div className="bg-gray-900 p-6 md:p-8 rounded-2xl md:rounded-3xl border border-white/5 flex flex-col sm:flex-row items-center justify-between gap-4 md:gap-6 text-center sm:text-left">
+                  <div>
+                    <h3 className="text-lg md:text-xl font-black uppercase italic">
+                        {hasQuiz ? "Knowledge Check Required" : "Objective Complete?"}
+                    </h3>
+                    <p className="text-gray-500 text-xs md:text-sm mt-1">
+                        {hasQuiz ? "Prove your mastery to unlock the next sector." : "Synchronize your progress once the transmission ends."}
+                    </p>
                   </div>
-                )}
+                  
+                  {hasQuiz ? (
+                    <button 
+                        onClick={() => setQuizMode(true)} 
+                        className="w-full sm:w-auto bg-neon-blue hover:bg-cyan-400 text-black font-black py-3 md:py-4 px-8 md:px-12 rounded-xl md:rounded-2xl shadow-xl transition-all active:scale-95 flex items-center justify-center gap-2 text-sm md:text-base"
+                    >
+                        <Play size={18} fill="black" /> START QUIZ
+                    </button>
+                  ) : (
+                    <button 
+                        onClick={finishLevel} 
+                        disabled={completing} 
+                        className="w-full sm:w-auto bg-green-600 hover:bg-green-500 text-white font-black py-3 md:py-4 px-8 md:px-12 rounded-xl md:rounded-2xl shadow-xl transition-all active:scale-95 flex items-center justify-center gap-2 text-sm md:text-base"
+                    >
+                        {completing ? <Loader2 className="animate-spin w-4 h-4 md:w-5 md:h-5" /> : <CheckCircle className="w-4 h-4 md:w-5 md:h-5" />} SUBMIT MISSION
+                    </button>
+                  )}
+                </div>
               </div>
             )}
 
@@ -431,10 +468,22 @@ const LessonPlayer = () => {
                   <h2 className="text-2xl md:text-3xl font-black mb-6 md:mb-8 uppercase tracking-tighter">Mission Intelligence</h2>
                   <div className="whitespace-pre-wrap text-gray-300 leading-relaxed text-base md:text-xl font-medium prose prose-invert max-w-none">{currentSection.content}</div>
                 </div>
-                {!hasQuiz && (
-                  <button onClick={finishLevel} disabled={completing} className="w-full bg-white hover:bg-neon-blue text-black font-black py-4 md:py-6 rounded-xl md:rounded-2xl shadow-xl flex items-center justify-center gap-2 md:gap-3 uppercase tracking-widest transition-all text-sm md:text-base">
-                    {completing ? <Loader2 className="animate-spin w-4 h-4 md:w-5 md:h-5" /> : <CheckCircle className="w-4 h-4 md:w-5 md:h-5" />} ACKNOWLEDGE INTEL
-                  </button>
+                
+                {hasQuiz ? (
+                    <button 
+                        onClick={() => setQuizMode(true)} 
+                        className="w-full bg-neon-blue hover:bg-cyan-400 text-black font-black py-4 md:py-6 rounded-xl md:rounded-2xl shadow-xl flex items-center justify-center gap-2 md:gap-3 uppercase tracking-widest transition-all text-sm md:text-base"
+                    >
+                        <Play size={18} fill="black" /> START QUIZ
+                    </button>
+                ) : (
+                    <button 
+                        onClick={finishLevel} 
+                        disabled={completing} 
+                        className="w-full bg-white hover:bg-neon-blue text-black font-black py-4 md:py-6 rounded-xl md:rounded-2xl shadow-xl flex items-center justify-center gap-2 md:gap-3 uppercase tracking-widest transition-all text-sm md:text-base"
+                    >
+                        {completing ? <Loader2 className="animate-spin w-4 h-4 md:w-5 md:h-5" /> : <CheckCircle className="w-4 h-4 md:w-5 md:h-5" />} ACKNOWLEDGE INTEL
+                    </button>
                 )}
               </div>
             )}

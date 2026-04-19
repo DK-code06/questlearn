@@ -2,7 +2,7 @@ import { useState, useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../../utils/api';
 import { AuthContext } from '../../context/AuthContext';
-import { LogIn, Loader2 } from 'lucide-react';
+import { LogIn, Loader2, Eye, EyeOff } from 'lucide-react';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -10,6 +10,8 @@ const Login = () => {
 
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [loading, setLoading] = useState(false);
+  // Add the state to track password visibility
+  const [showPassword, setShowPassword] = useState(false);
 
   const onSubmit = async (e: any) => {
     e.preventDefault();
@@ -68,14 +70,25 @@ const Login = () => {
 
             <div className="space-y-1">
               <label className="text-[10px] font-black text-gray-500 uppercase ml-2 tracking-widest">Access Key</label>
-              <input 
-                required
-                type="password" 
-                placeholder="••••••••" 
-                name="password" 
-                onChange={e => setFormData({...formData, password: e.target.value})}
-                className="w-full bg-black/50 border border-gray-800 p-4 rounded-2xl text-white focus:border-neon-blue focus:ring-1 focus:ring-neon-blue outline-none transition-all placeholder:text-gray-700"
-              />
+              {/* Wrapped in a relative div to position the eye icon */}
+              <div className="relative">
+                <input 
+                  required
+                  type={showPassword ? "text" : "password"} 
+                  placeholder="••••••••" 
+                  name="password" 
+                  onChange={e => setFormData({...formData, password: e.target.value})}
+                  // Added pr-12 to ensure the text doesn't hide behind the icon
+                  className="w-full bg-black/50 border border-gray-800 p-4 pr-12 rounded-2xl text-white focus:border-neon-blue focus:ring-1 focus:ring-neon-blue outline-none transition-all placeholder:text-gray-700"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-neon-blue transition-colors"
+                >
+                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                </button>
+              </div>
             </div>
 
             <button 
